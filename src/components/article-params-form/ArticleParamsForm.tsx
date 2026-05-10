@@ -3,7 +3,7 @@ import { Button } from 'src/ui/button';
 import clsx from 'clsx';
 
 import styles from './ArticleParamsForm.module.scss';
-import { SyntheticEvent, useState, useRef } from 'react';
+import { SyntheticEvent, useState, useRef, useEffect } from 'react';
 import { Select } from 'src/ui/select';
 import {
 	fontFamilyOptions,
@@ -17,17 +17,17 @@ import {
 } from 'src/constants/articleProps';
 import { RadioGroup } from 'src/ui/radio-group';
 import { Separator } from 'src/ui/separator';
-import { useOutsideClickClose } from 'src/ui/select/hooks/useOutsideClickClose';
+import { Text } from 'src/ui/text';
 
 type ArticleParamsFormProps = {
-	setArticleState: (state: typeof defaultArticleState) => void;
+	setArticleState: (state: ArticleStateType) => void;
 };
 
 export const ArticleParamsForm = ({
 	setArticleState,
 }: ArticleParamsFormProps) => {
 	const asideRef = useRef<HTMLDivElement | null>(null);
-	const [isOpen, setIsOpen] = useState(false);
+	const [isParametrsOpen, setParametrsOpen] = useState(false);
 	const [formData, setFormData] = useState(defaultArticleState);
 
 	function handleChange(key: keyof ArticleStateType) {
@@ -45,27 +45,48 @@ export const ArticleParamsForm = ({
 		setArticleState(defaultArticleState);
 		setFormData(defaultArticleState);
 	}
-	useOutsideClickClose({
-		isOpen: isOpen,
-		rootRef: asideRef,
-		onChange: setIsOpen,
-	});
+	useEffect(() => {
+		const handleClick = (e: MouseEvent) => {
+			const { target } = e;
+			if (
+				target instanceof Node &&
+				asideRef.current &&
+				!asideRef.current.contains(target)
+			) {
+				setParametrsOpen(false);
+			}
+		};
+
+		if (isParametrsOpen) {
+			window.addEventListener('mousedown', handleClick);
+		}
+
+		return () => {
+			window.removeEventListener('mousedown', handleClick);
+		};
+	}, [isParametrsOpen]);
 
 	return (
 		<>
 			<ArrowButton
-				isOpen={isOpen}
+				isOpen={isParametrsOpen}
 				onClick={() => {
-					setIsOpen((prev) => !prev);
+					setParametrsOpen((prev) => !prev);
 				}}
 			/>
 			<aside
-				className={clsx(styles.container, isOpen && styles.container_open)}
+				className={clsx(
+					styles.container,
+					isParametrsOpen && styles.container_open
+				)}
 				ref={asideRef}>
 				<form
 					className={styles.form}
 					onSubmit={handleSubmit}
 					onReset={handleReset}>
+					<Text size={31} weight={800} uppercase={true}>
+						Задайте параметры
+					</Text>
 					<Select
 						selected={formData.fontFamilyOption}
 						options={fontFamilyOptions}
@@ -85,6 +106,7 @@ export const ArticleParamsForm = ({
 						options={fontColors}
 						onChange={handleChange('fontColor')}
 					/>
+
 					<Separator />
 					<Select
 						title='Цвет фона'
